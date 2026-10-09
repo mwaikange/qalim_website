@@ -1,0 +1,11 @@
+(() => {
+  const buttons=[...document.querySelectorAll('[data-cell]')];if(!buttons.length)return;
+  const status=document.querySelector('#demo-status'),hint=document.querySelector('#demo-hint');
+  const lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  let board=Array(9).fill(null),busy=false,finished=false,timer;
+  function result(cells){const line=lines.find(line=>cells[line[0]]&&line.every(i=>cells[i]===cells[line[0]]));return line?{winner:cells[line[0]],line}:cells.every(Boolean)?{winner:'draw',line:[]}:null;}
+  function score(cells,player){const end=result(cells);if(end)return end.winner==='O'?10:end.winner==='X'?-10:0;const values=[];cells.forEach((cell,i)=>{if(cell)return;cells[i]=player;values.push(score(cells,player==='O'?'X':'O'));cells[i]=null;});return player==='O'?Math.max(...values):Math.min(...values);}
+  function paint(){const end=result(board);finished=!!end;buttons.forEach((button,i)=>{button.textContent=board[i]==='X'?'×':board[i]==='O'?'○':'';button.dataset.mark=board[i]||'';button.disabled=busy||finished||!!board[i];button.classList.toggle('winning',!!end?.line.includes(i));button.setAttribute('aria-label',`Row ${Math.floor(i/3)+1}, column ${i%3+1}: ${board[i]||'empty'}`);});if(end){status.textContent=end.winner==='X'?'That one’s yours. Nice move!':end.winner==='O'?'The bot got this one. Run it back?':'A worthy stalemate.';hint.textContent='Ready for a real rival? Find a challenger above.';}else{status.textContent=busy?'Your rival is thinking…':'Go on. Make your mark.';hint.textContent=busy?'A quick solo warm-up.':'Three in a row. You move first.';}}
+  buttons.forEach((button,i)=>button.addEventListener('click',()=>{if(busy||finished||board[i])return;board[i]='X';busy=!result(board);paint();if(!busy)return;timer=setTimeout(()=>{const candidates=[];board.forEach((cell,i)=>{if(cell)return;board[i]='O';candidates.push({i,value:score(board,'X')});board[i]=null;});const best=Math.max(...candidates.map(c=>c.value));const choices=candidates.filter(c=>c.value===best);board[choices[Math.floor(Math.random()*choices.length)].i]='O';busy=false;paint();},420);}));
+  document.querySelector('#reset-round').addEventListener('click',()=>{clearTimeout(timer);board=Array(9).fill(null);busy=false;finished=false;paint();});
+})();
